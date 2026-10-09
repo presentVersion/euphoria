@@ -1,0 +1,32 @@
+stateDiagram-v2
+    [*] --> WAITING_FOR_TRIAGE: Front Desk Registration Completed
+    
+    WAITING_FOR_TRIAGE --> WAITING: Triage Urgency Confirmed by Nurse
+    
+    state WAITING {
+        [*] --> PriorityRanked: PriorityScore = Urgency + Wait + Escalations
+        PriorityRanked --> ActiveInRoster: Displayed on Doctor Worklist
+    }
+
+    WAITING --> REASSESSMENT_OVERDUE: Current Time > Reassessment Due + 5 mins
+    REASSESSMENT_OVERDUE --> WAITING: Secondary Vitals Recorded & Re-evaluated
+    
+    WAITING --> CALLED: Doctor Clicks "Call Patient" (FOR UPDATE SKIP LOCKED)
+    REASSESSMENT_OVERDUE --> CALLED: Doctor Calls Overdue Patient
+    
+    CALLED --> IN_CONSULTATION: Patient Enters Examination Room
+    CALLED --> WAITING: Patient No-Show / Call Timeout (After 5 mins)
+    
+    IN_CONSULTATION --> ON_HOLD: Patient Sent for CT / Ultrasound / Labs
+    ON_HOLD --> WAITING: Investigations Completed -> Returned to Queue Front
+    
+    IN_CONSULTATION --> COMPLETED: Doctor Submits Disposition (Discharge / Admit)
+    
+    WAITING --> LEFT_WITHOUT_BEING_SEEN: Patient Departs Waiting Area Prior to Care
+    REASSESSMENT_OVERDUE --> LEFT_WITHOUT_BEING_SEEN: Patient Leaves Waiting Area
+    
+    WAITING --> REASSIGNED: Transferred to Another Care Area / Sub-Queue
+    
+    COMPLETED --> [*]
+    LEFT_WITHOUT_BEING_SEEN --> [*]
+    REASSIGNED --> [*]

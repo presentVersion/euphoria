@@ -1,0 +1,40 @@
+sequenceDiagram
+    autonumber
+    actor Doctor as "Treating Clinician"
+    participant DocUI as "Doctor Console"
+    participant Gateway as "API Gateway"
+    participant QService as "Queue & Concurrency Service"
+    participant DB as "PostgreSQL DB"
+    participant PublicBoard as "Public Display Board"
+
+    Doctor->>DocUI: Clicks "Call Next Patient" (Specifies Exam Room 3)
+    DocUI->>Gateway: POST /api/v1/queues/{id}/call-next
+    Gateway->>QService: callNextPatient(clinicianId, roomNumber)
+    
+    rect rgb(240, 248, 255)
+        Note over QService, DB: Atomic Row-Level Lock Boundary
+        QService->>DB: BEGIN TRANSACTION
+        QService->>DB: SELECT * FROM queue_entries WHERE status='WAITING' ORDER BY priority_score DESC LIMIT 1 FOR UPDATE SKIP LOCKED
+        DB-->>QService: Returns Patient Token A-104 (Row Locked)
+        QService->>DB: UPDATE queue_entries SET status='CALLED', called_at=NOW(), room='Room 3'
+        QService->>DB: INSERT INTO consultations (encounter_id, clinician_id, room_number, status='CALLED')
+        QService->>DB: COMMIT TRANSACTION
+    end
+
+    QService-->>Gateway: Return Assigned Patient (Token A-104)
+    Gateway-->>DocUI: Render Patient Record & Open Consultation Screen
+    QService->>PublicBoard: SSE PATIENT_CALLED { token: 'A-104', room: 'Room 3' }
+    PublicBoard-->>PublicBoard: Flash Token & Announce Room Audio Chime
+
+    Doctor->>DocUI: Patient Enters Room -> Clicks "Begin Consultation"
+    DocUI->>Gateway: POST /api/v1/consultations/{id}/start
+    Gateway->>DB: UPDATE consultations SET status='IN_PROGRESS', started_at=NOW()
+    Gateway->>DB: UPDATE queue_entries SET status='IN_CONSULTATION'
+
+    Doctor->>DocUI: Documents Findings & Selects Disposition: "DISCHARGED"
+    DocUI->>Gateway: POST /api/v1/consultations/{id}/disposition
+    Gateway->>DB: UPDATE consultations SET status='COMPLETED', disposition='DISCHARGED'
+    Gateway->>DB: UPDATE encounters SET status='DISCHARGED', closed_at=NOW()
+    Gateway->>DB: UPDATE queue_entries SET status='COMPLETED'
+    Gateway->>DB: INSERT INTO audit_logs (ENCOUNTER_CLOSED)
+    Gateway-->>DocUI: Consultation Finalized (Room 3 Vacated)

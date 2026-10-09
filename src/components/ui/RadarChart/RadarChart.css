@@ -1,0 +1,71 @@
+.radar-chart-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.radar-chart-svg {
+  overflow: visible;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.4));
+}
+
+.radar-bg-circle {
+  fill: rgba(15, 23, 42, 0.6);
+  stroke: rgba(255, 255, 255, 0.05);
+}
+
+.radar-web-level {
+  fill: none;
+  stroke: #6366f1;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.radar-axis-line {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1;
+}
+
+.radar-data-polygon {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.radar-vertex-dot {
+  filter: drop-shadow(0 0 6px #818cf8);
+}
+
+.radar-vertex-halo {
+  fill: none;
+  stroke-width: 1.5;
+  opacity: 0.4;
+  animation: radarPulse 2.5s infinite ease-out;
+}
+
+@keyframes radarPulse {
+  0% {
+    r: 5px;
+    opacity: 0.8;
+  }
+  70% {
+    r: 12px;
+    opacity: 0;
+  }
+  100% {
+    r: 12px;
+    opacity: 0;
+  }
+}
+
+.radar-label {
+  fill: #cbd5e1;
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.radar-label-val {
+  font-weight: 700;
+}

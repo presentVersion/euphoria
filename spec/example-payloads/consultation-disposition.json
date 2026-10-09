@@ -1,0 +1,28 @@
+{
+  "consultationId": "a7b3c21d-94e8-4672-9112-65a8e0f12345",
+  "encounterId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "clinicianId": "c89b2134-11e2-4876-90b1-124987654321",
+  "dispositionType": "ADMITTED_ICU",
+  "primaryClinicalDiagnosis": "Acute ST-Elevation Myocardial Infarction (STEMI)",
+  "clinicalSummary": "Patient stabilized in Resuscitation Bay 1. 12-lead ECG confirmed STEMI. Interventional cardiology team mobilized for urgent primary percutaneous coronary intervention (PCI). Dual antiplatelet therapy and IV heparin initiated.",
+  "destinationDepartmentId": "f9a12345-6789-4bcd-8ef0-123456789abc",
+  "transferringStaffId": "c89b2134-11e2-4876-90b1-124987654321",
+  "receivingStaffId": "d0e12345-6789-4bcd-8ef0-987654321fed",
+  "prescriptionsRecorded": [
+    {
+      "medicationName": "Aspirin",
+      "dosage": "300mg",
+      "route": "Oral",
+      "administered": true
+    },
+    {
+      "medicationName": "Ticagrelor",
+      "dosage": "180mg",
+      "route": "Oral",
+      "administered": true
+    }
+  ],
+  "followUpInstructions": "Direct catheterization lab admission. Continuous telemetry and non-invasive blood pressure monitoring.",
+  "dispositionTimestamp": "2026-10-09T09:30:00Z",
+  "closeEncounter": true
+}

@@ -1,0 +1,180 @@
+:root {
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Space Grotesk', 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Brand Palette from Specification */
+  --primary-navy: #123B73;
+  --deep-navy: #0B2850;
+  --primary-teal: #0D9488;
+  --teal-hover: #0F766E;
+  --light-blue-bg: #F3F8FD;
+  --white-surface: #FFFFFF;
+  --main-text: #172B4D;
+  --secondary-text: #64748B;
+  --border-color: #DCE6F1;
+
+  /* Urgency Colors */
+  --critical: #DC2626;
+  --critical-bg: #FEE2E2;
+  --high: #F97316;
+  --high-bg: #FFEDD5;
+  --moderate: #EAB308;
+  --moderate-bg: #FEF9C3;
+  --low: #16A34A;
+  --low-bg: #DCFCE7;
+  --info: #0284C7;
+  --info-bg: #E0F2FE;
+
+  /* Primary Gradients */
+  --primary-gradient: linear-gradient(135deg, #0D9488 0%, #123B73 100%);
+  --navy-gradient: linear-gradient(135deg, #0B2850 0%, #123B73 100%);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--light-blue-bg);
+  color: var(--main-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-heading {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+/* Site Frame */
+.site-outer-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--light-blue-bg);
+}
+
+.site-app-frame {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px -10px rgba(11, 40, 80, 0.08);
+}
+
+/* Authentic MediQueue Hospital Styling */
+.mediqueue-sidebar {
+  background: #0B2850;
+  color: #94A3B8;
+}
+
+.mediqueue-sidebar-item {
+  color: #94A3B8;
+  transition: all 0.2s ease;
+  border-radius: 10px;
+}
+
+.mediqueue-sidebar-item:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mediqueue-sidebar-item.active {
+  background: #0D9488;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
+}
+
+.mediqueue-content-bg {
+  background: #F3F8FD;
+  color: #172B4D;
+}
+
+.mediqueue-panel-card {
+  background: #FFFFFF;
+  border: 1px solid #DCE6F1;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(11, 40, 80, 0.03);
+}
+
+.mediqueue-input-field {
+  background: #FFFFFF;
+  border: 1px solid #DCE6F1;
+  border-radius: 10px;
+  color: #172B4D;
+  padding: 9px 13px;
+  font-size: 0.875rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mediqueue-input-field:focus {
+  border-color: #0D9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+/* Badges matching wireframe */
+.badge-crit {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FCA5A5;
+}
+
+.badge-high {
+  background: #FFEDD5;
+  color: #F97316;
+  border: 1px solid #FDBA74;
+}
+
+.badge-mod {
+  background: #FEF9C3;
+  color: #CA8A04;
+  border: 1px solid #FDE047;
+}
+
+.badge-low {
+  background: #DCFCE7;
+  color: #16A34A;
+  border: 1px solid #86EFAC;
+}
+
+.badge-inconsult {
+  background: #DBEAFE;
+  color: #0284C7;
+  border: 1px solid #BAE6FD;
+}
+
+.badge-waiting {
+  background: #FFFBEB;
+  color: #D97706;
+  border: 1px solid #FDE68A;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

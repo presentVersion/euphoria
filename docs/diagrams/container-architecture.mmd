@@ -1,0 +1,50 @@
+graph TB
+    subgraph Browser ["Client Tier (Browser Terminals)"]
+        SPA["Single Page Web Application (React 19 / TypeScript)"]
+        State["State Stores: TanStack Query + Zustand"]
+        SSEListener["SSE EventSource Client (Auto-Reconnect)"]
+        CustomUI["User-Supplied Custom UI Components (React Bits / 21st.dev)"]
+    end
+
+    subgraph Server ["Application Tier (Node.js 20 / Fastify)"]
+        ReverseProxy["Reverse Proxy (Nginx / TLS 1.3 Termination)"]
+        AuthMiddleware["Auth & RBAC Middleware (Argon2id / JWT)"]
+        ZodValidator["Zod Schema Validation & Sanitizer"]
+        
+        subgraph DomainServices ["Domain Services Layer"]
+            RegService["Registration & Identity Service"]
+            TriageService["Triage Decision Support Service"]
+            QueueService["Dynamic Queue & Concurrency Service"]
+            ConsultService["Consultation & Disposition Service"]
+            AuditService["Cryptographic Audit Ledger Service"]
+            WaitTimeService["Waiting Time Estimation Service"]
+        end
+        
+        SSEBroadcaster["Server-Sent Events Broadcaster Hub"]
+    end
+
+    subgraph DataTier ["Persistence Tier (PostgreSQL 16)"]
+        RelationalTables[("Relational Tables: Patients, Encounters, Vitals, Queues")]
+        RowLockEngine["Atomic Row-Level Locking (FOR UPDATE SKIP LOCKED)"]
+        AuditLedger[("Append-Only Audit Ledger (SHA-256 Hash Chained)")]
+    end
+
+    SPA --> CustomUI
+    SPA --> State
+    State --> SSEListener
+    SPA -->|HTTPS REST API| ReverseProxy
+    ReverseProxy --> AuthMiddleware
+    AuthMiddleware --> ZodValidator
+    ZodValidator --> DomainServices
+
+    RegService --> RelationalTables
+    TriageService --> RelationalTables
+    QueueService --> RowLockEngine
+    RowLockEngine --> RelationalTables
+    ConsultService --> RelationalTables
+    DomainServices --> AuditService
+    AuditService --> AuditLedger
+
+    QueueService -->|Broadcast Queue Reordered| SSEBroadcaster
+    TriageService -->|Broadcast Red-Flag Alert| SSEBroadcaster
+    SSEBroadcaster -->|HTTPS SSE Push| SSEListener

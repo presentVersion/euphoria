@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RedFlagAlertEvent",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "facilityId", "departmentId", "payload"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string", "const": "RED_FLAG_TRIGGERED" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "facilityId": { "type": "string", "format": "uuid" },
+    "departmentId": { "type": "string", "format": "uuid" },
+    "payload": {
+      "type": "object",
+      "required": ["alertId", "encounterId", "tokenNumber", "alertType", "triggerReason", "targetCareArea"],
+      "properties": {
+        "alertId": { "type": "string", "format": "uuid" },
+        "encounterId": { "type": "string", "format": "uuid" },
+        "tokenNumber": { "type": "string", "example": "RES-01" },
+        "alertType": { "type": "string", "enum": ["PHYSIOLOGICAL_CRISIS", "UNRESPONSIVE_PATIENT", "SEVERE_HYPOXIA", "MANUAL_PANIC_BUTTON", "CARDIAC_ARREST"] },
+        "triggerReason": { "type": "string" },
+        "targetCareArea": { "type": "string", "example": "Resuscitation Bay" },
+        "triggeredAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

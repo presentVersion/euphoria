@@ -1,0 +1,40 @@
+graph TB
+    subgraph Users ["Healthcare Stakeholders"]
+        R["Receptionist / Front Desk"]
+        T["Triage Nurse"]
+        D["Treating Clinician / Doctor"]
+        C["Charge Nurse / Supervisor"]
+        P["Public Waiting Room Patient"]
+    end
+
+    subgraph SystemBoundary ["Smart Patient Queue & Emergency Triage System"]
+        WebClient["Web Application Frontend (React 19 / TypeScript)"]
+        APIGateway["Modular API Gateway & Backend Services (Fastify / Node.js)"]
+        TriageEngine["3-Layer Triage Decision Support Engine"]
+        QueueEngine["Dynamic Multi-Factor Prioritization Engine"]
+        SSEHub["Real-Time SSE Event Hub"]
+    end
+
+    subgraph StorageAndIntegrations ["Data & External Boundaries"]
+        PostgresDB[("PostgreSQL 16 Authoritative Store & Append-Only Audit")]
+        PublicDisplay["Public Waiting Room TV Displays (Sanitized Tokens)"]
+        ExtEHR["External Hospital EHR / FHIR (Optional Adapter)"]
+        SMSGateway["Auxiliary SMS Gateway (Optional Adapter)"]
+    end
+
+    R -->|Search & Register Patients| WebClient
+    T -->|Submit Vitals & Confirm Acuity| WebClient
+    D -->|Call Patient & Record Disposition| WebClient
+    C -->|Monitor Queues & Authorize Downgrades| WebClient
+    P -.->|View Token Progress| PublicDisplay
+
+    WebClient -->|REST API Requests| APIGateway
+    APIGateway -->|Evaluate Rules| TriageEngine
+    APIGateway -->|Recalculate Order| QueueEngine
+    APIGateway -->|Transactional ACID Commit| PostgresDB
+    QueueEngine -->|Publish Events| SSEHub
+    SSEHub -->|Push Real-Time Updates| WebClient
+    SSEHub -->|Push Anonymous Tokens| PublicDisplay
+
+    APIGateway -.->|Async HL7/FHIR Sync| ExtEHR
+    APIGateway -.->|Optional SMS Updates| SMSGateway

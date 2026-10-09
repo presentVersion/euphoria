@@ -1,0 +1,72 @@
+.slide-commit-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  touch-action: none;
+  outline: none;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.slide-commit-wrapper:focus-visible {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.7);
+}
+
+.slide-commit-track,
+.slide-commit-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.slide-commit-fill {
+  transition: background 0.3s ease, opacity 0.25s ease;
+  border-radius: inherit;
+}
+
+.slide-commit-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+}
+
+.slide-commit-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  font-family: 'Inter', sans-serif;
+}
+
+.slide-commit-thumb {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  z-index: 10;
+}
+
+.slide-commit-thumb-icon {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+  line-height: 1;
+  user-select: none;
+}

@@ -1,0 +1,35 @@
+stateDiagram-v2
+    [*] --> Unassessed: Patient Registered at Front Desk
+    
+    Unassessed --> ObservationsRecorded: Triage Nurse Captures Vitals & Symptoms
+    
+    state ObservationsRecorded {
+        [*] --> RangeCheck: Zod Validation & Range Audit
+        RangeCheck --> RedFlagScan: Evaluate Life-Threat Rules
+        RedFlagScan --> RuleEngine: Evaluate ESI / Protocol Logic
+        RuleEngine --> SuggestedScore: Compute Suggested Urgency (Level 1-5)
+    }
+
+    SuggestedScore --> CriticalRedFlag: Immediate Life Threat Detected (SpO2 < 88%, SBP < 75)
+    CriticalRedFlag --> ResuscitationBay: Level 1 Alarm Fired -> Direct Resus Bay Transfer
+
+    SuggestedScore --> ClinicalReview: Standard Physiological Profile
+
+    state ClinicalReview {
+        [*] --> DecisionGate
+        DecisionGate --> AcuityConfirmed: Nurse Agrees with Suggestion
+        DecisionGate --> ClinicalOverride: Nurse Escalates Acuity (Recorded Reason)
+        DecisionGate --> SupervisedDowngrade: Nurse Lowers Acuity (Requires Supervisor Co-Sign)
+    }
+
+    AcuityConfirmed --> QueuePlacement: Commit Urgency to Encounter
+    ClinicalOverride --> QueuePlacement: Commit Urgency & Override Audit
+    SupervisedDowngrade --> QueuePlacement: Supervisor Credentials Verified & Logged
+
+    state QueuePlacement {
+        [*] --> InsertQueue: Insert into Department Queue
+        InsertQueue --> ScheduleReassessment: Calculate Reassessment Due Time
+    }
+
+    QueuePlacement --> WaitingInQueue: Patient Placed in Dynamic Queue
+    WaitingInQueue --> [*]

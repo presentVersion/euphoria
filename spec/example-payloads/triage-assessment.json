@@ -1,0 +1,37 @@
+{
+  "encounterId": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "protocolVersionId": "d9b2d63d-a233-4f9a-9e12-32a8e8b98144",
+  "assessingStaffId": "e1a90c42-2b6e-4cb8-8c11-923f11002341",
+  "assessmentType": "INITIAL",
+  "presentingComplaints": [
+    {
+      "code": "CHEST_PAIN",
+      "description": "Acute retrosternal crushing pain radiating to left arm",
+      "onsetTime": "2026-10-09T08:15:00Z",
+      "severityReported": 8
+    }
+  ],
+  "vitalSigns": {
+    "heartRateBpm": 112,
+    "systolicBpMmhg": 168,
+    "diastolicBpMmhg": 98,
+    "respiratoryRateBpm": 26,
+    "oxygenSaturationPct": 94.0,
+    "temperatureCelsius": 37.1,
+    "gcsScore": 15,
+    "painScore": 8,
+    "recordedAt": "2026-10-09T08:45:00Z"
+  },
+  "redFlagFindings": [
+    {
+      "triggerKey": "RED_FLAG_CHEST_PAIN_DIAPHORETIC",
+      "description": "Patient experiencing crushing chest pain with documented diaphoresis and tachycardia",
+      "severity": "CRITICAL"
+    }
+  ],
+  "softwareSuggestedUrgency": 1,
+  "clinicianConfirmedUrgency": 1,
+  "clinicalRationale": "Patient exhibits classic anginal symptoms with diaphoresis and vital sign instability. Immediate resuscitation/cardiology alert initiated.",
+  "reassessmentIntervalMinutes": 15,
+  "assignedDepartmentId": "b1e9c20a-81a2-4a0b-bc11-a889104b9012"
+}

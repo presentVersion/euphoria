@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QueueReorderedEvent",
+  "type": "object",
+  "required": ["eventId", "eventType", "timestamp", "facilityId", "departmentId", "payload"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string", "const": "QUEUE_REORDERED" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "facilityId": { "type": "string", "format": "uuid" },
+    "departmentId": { "type": "string", "format": "uuid" },
+    "payload": {
+      "type": "object",
+      "required": ["queueId", "entriesCount", "entries"],
+      "properties": {
+        "queueId": { "type": "string", "format": "uuid" },
+        "entriesCount": { "type": "integer", "minimum": 0 },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "tokenNumber", "urgencyLevel", "priorityScore", "status", "reassessmentDueAt"],
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "tokenNumber": { "type": "string" },
+              "urgencyLevel": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "priorityScore": { "type": "number" },
+              "status": { "type": "string", "enum": ["WAITING", "REASSESSMENT_OVERDUE", "CALLED", "ON_HOLD"] },
+              "reassessmentDueAt": { "type": "string", "format": "date-time" },
+              "isReassessmentOverdue": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

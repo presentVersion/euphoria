@@ -1,0 +1,536 @@
+openapi: 3.1.0
+info:
+  title: Smart Patient Queue & Emergency Triage Management System API
+  description: >-
+    Authoritative REST API specification for hospital patient registration,
+    3-layer clinical triage decision support, dynamic multi-factor queue prioritization,
+    real-time event streaming, and consultation workflow management.
+  version: 1.0.0
+  contact:
+    name: Healthcare Information Systems Engineering Team
+    email: triage-architecture@hospital.org
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local Development Server
+  - url: https://triage.hospital.org/api/v1
+    description: Production Clinical Gateway
+
+paths:
+  /auth/login:
+    post:
+      summary: Staff Login & Session Authentication
+      description: Authenticates clinical or administrative staff member and issues secure HTTP-only session cookie.
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: sarah.nurse@hospital.org
+                password:
+                  type: string
+                  format: password
+                  example: SecurePassword123!
+      responses:
+        '200':
+          description: Authentication successful.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: HTTP-only Secure JWT session cookie.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSuccessResponse'
+        '401':
+          description: Invalid email or password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded (account temporarily locked).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/break-glass:
+    post:
+      summary: Request Break-Glass Elevated Emergency Access
+      description: Grants temporary 2-hour elevated access across department boundaries for urgent resuscitation needs.
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetEncounterId, reasonCategory, clinicalJustification, passwordConfirmation]
+              properties:
+                targetEncounterId:
+                  type: string
+                  format: uuid
+                reasonCategory:
+                  type: string
+                  enum: [RESUSCITATION_SUPPORT, SURGE_REALLOCATION, CRITICAL_LAB_REVIEW, OTHER_LIFE_THREAT]
+                clinicalJustification:
+                  type: string
+                  minLength: 10
+                  example: Active CPR in progress; immediate access needed for blood type and crossmatch history.
+                passwordConfirmation:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Elevated session granted. Security audit event persisted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      elevatedUntil: { type: string, format: date-time }
+                      auditEventId: { type: string, format: uuid }
+
+  /patients/search:
+    get:
+      summary: Search Patient Master Index
+      description: Queries patient records by MRN, National ID, Phone, or Name + DOB.
+      tags: [Patients]
+      parameters:
+        - name: mrn
+          in: query
+          schema: { type: string }
+        - name: phone
+          in: query
+          schema: { type: string }
+        - name: name
+          in: query
+          schema: { type: string }
+        - name: dob
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Matching patient records.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PatientSummary'
+
+  /patients:
+    post:
+      summary: Register New Patient
+      description: Captures demographic details, checks duplicates, and creates master patient record.
+      tags: [Patients]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPatientRequest'
+      responses:
+        '201':
+          description: Patient created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    $ref: '#/components/schemas/PatientSummary'
+        '409':
+          description: Potential duplicate patient record detected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DuplicateMatchResponse'
+
+  /patients/emergency-bypass:
+    post:
+      summary: 1-Click Emergency Bypass Registration
+      description: Generates temporary emergency patient record and routes immediately to Resuscitation Bay.
+      tags: [Patients, Emergency]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [arrivalMethod, initialChiefComplaint, departmentId]
+              properties:
+                arrivalMethod:
+                  type: string
+                  enum: [WALK_IN, AMBULANCE, WHEELCHAIR, PUBLIC_TRANSPORT, OTHER]
+                initialChiefComplaint:
+                  type: string
+                  example: Unresponsive trauma victim, severe head laceration, GCS 4
+                departmentId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Emergency bypass token generated; alert fired.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      patientId: { type: string, format: uuid }
+                      encounterId: { type: string, format: uuid }
+                      temporaryToken: { type: string, example: TEMP-EMERG-8120 }
+                      urgencyLevel: { type: integer, example: 1 }
+                      careArea: { type: string, example: Resuscitation Bay }
+
+  /triage/assessments:
+    post:
+      summary: Submit Triage Observations & Evaluate Urgency
+      description: Evaluates physiological vital signs and symptoms against hospital protocol rules.
+      tags: [Triage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriageAssessmentRequest'
+      responses:
+        '200':
+          description: Suggested urgency level computed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriageSuggestionResponse'
+
+  /triage/assessments/{id}/confirm:
+    post:
+      summary: Clinician Confirms or Overrides Urgency
+      description: Authorizes urgency level and commits encounter to dynamic queue.
+      tags: [Triage]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmedUrgencyLevel, isClinicalOverride]
+              properties:
+                confirmedUrgencyLevel:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                isClinicalOverride:
+                  type: boolean
+                overrideReason:
+                  type: string
+                  nullable: true
+                supervisorCredentials:
+                  type: object
+                  nullable: true
+                  description: Mandatory if urgency level is downgraded.
+                  properties:
+                    supervisorEmail: { type: string }
+                    supervisorPassword: { type: string }
+                    downgradeJustification: { type: string }
+      responses:
+        '200':
+          description: Urgency confirmed; patient entered in queue.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      queueEntryId: { type: string, format: uuid }
+                      tokenNumber: { type: string, example: AC-104 }
+                      priorityScore: { type: number, example: 50002.5 }
+                      reassessmentDueAt: { type: string, format: date-time }
+        '403':
+          description: Supervisor dual-signature required for downgrade.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /queues/{id}/entries:
+    get:
+      summary: Fetch Active Prioritized Queue
+      description: Returns active waiting queue entries sorted strictly by priority score.
+      tags: [Queue]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Prioritized queue roster.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QueueEntryItem'
+
+  /queues/{id}/call-next:
+    post:
+      summary: Atomically Call Next Patient (Row Locked)
+      description: Uses FOR UPDATE SKIP LOCKED to assign the highest priority waiting patient to an examination room.
+      tags: [Queue, Consultation]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roomNumber]
+              properties:
+                roomNumber:
+                  type: string
+                  example: Consultation Room 3
+      responses:
+        '200':
+          description: Patient called successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      consultationId: { type: string, format: uuid }
+                      tokenNumber: { type: string, example: AC-104 }
+                      patientNameMasked: { type: string, example: Rahul S**** }
+                      roomNumber: { type: string, example: Consultation Room 3 }
+        '404':
+          description: No waiting patients in queue.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /consultations/{id}/disposition:
+    post:
+      summary: Record Clinical Disposition & Complete Encounter
+      description: Finalizes doctor consultation, archives queue entry, and records disposition.
+      tags: [Consultation]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [disposition, workingDiagnosis, clinicalNotes]
+              properties:
+                disposition:
+                  type: string
+                  enum: [DISCHARGED, ADMITTED_INPATIENT, TRANSFERRED_EXTERNAL, LEFT_WITHOUT_BEING_SEEN, DECEASED]
+                workingDiagnosis:
+                  type: string
+                  example: Acute non-cardiac chest wall muscle strain
+                clinicalNotes:
+                  type: string
+                  example: Serial ECGs negative; cardiac enzymes normal. Discharged with analgesics.
+                dispositionInstructions:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Encounter finalized.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      encounterClosedAt: { type: string, format: date-time }
+                      dispositionSummary: { type: string }
+
+  /realtime/stream:
+    get:
+      summary: Server-Sent Events (SSE) Stream
+      description: Persistent real-time event push channel for authenticated clinical terminals.
+      tags: [Realtime]
+      parameters:
+        - name: department_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: SSE event stream opened.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: "event: QUEUE_REORDERED\ndata: { ... }\n\n"
+
+components:
+  schemas:
+    AuthSuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                id: { type: string, format: uuid }
+                employeeId: { type: string, example: EMP-NUR-201 }
+                firstName: { type: string, example: Sarah }
+                lastName: { type: string, example: Jenkins }
+                role: { type: string, example: TRIAGE_NURSE }
+
+    PatientSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        mrn: { type: string, example: MRN-2026-004921 }
+        firstName: { type: string, example: Rahul }
+        lastName: { type: string, example: Sharma }
+        dateOfBirth: { type: string, format: date, example: "1988-04-12" }
+        administrativeSex: { type: string, example: MALE }
+        phoneNumber: { type: string, example: "+91 98765 43210" }
+
+    NewPatientRequest:
+      type: object
+      required: [firstName, lastName, administrativeSex]
+      properties:
+        firstName: { type: string, minLength: 1 }
+        lastName: { type: string, minLength: 1 }
+        dateOfBirth: { type: string, format: date, nullable: true }
+        estimatedAgeYears: { type: integer, nullable: true }
+        administrativeSex: { type: string, enum: [MALE, FEMALE, OTHER, UNKNOWN] }
+        phoneNumber: { type: string, nullable: true }
+        emergencyContactName: { type: string, nullable: true }
+        emergencyContactPhone: { type: string, nullable: true }
+
+    TriageAssessmentRequest:
+      type: object
+      required: [encounterId, chiefComplaint, vitals, targetCareAreaId]
+      properties:
+        encounterId: { type: string, format: uuid }
+        chiefComplaint: { type: string, minLength: 5 }
+        symptomOnset: { type: string, format: date-time, nullable: true }
+        painScore: { type: integer, minimum: 0, maximum: 10, nullable: true }
+        targetCareAreaId: { type: string, format: uuid }
+        vitals:
+          type: object
+          properties:
+            heartRateBpm: { type: integer, minimum: 20, maximum: 300, nullable: true }
+            systolicBpMmhg: { type: integer, minimum: 40, maximum: 300, nullable: true }
+            diastolicBpMmhg: { type: integer, minimum: 20, maximum: 200, nullable: true }
+            respiratoryRateBpm: { type: integer, minimum: 4, maximum: 80, nullable: true }
+            spo2Percentage: { type: number, minimum: 40, maximum: 100, nullable: true }
+            temperatureCelsius: { type: number, minimum: 25, maximum: 45, nullable: true }
+            consciousnessScale: { type: string, enum: [ALERT, VERBAL, PAIN, UNRESPONSIVE, GCS] }
+            gcsScore: { type: integer, minimum: 3, maximum: 15, nullable: true }
+
+    TriageSuggestionResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        data:
+          type: object
+          properties:
+            assessmentId: { type: string, format: uuid }
+            suggestedUrgencyLevel: { type: integer, example: 2 }
+            matchedProtocolRules:
+              type: array
+              items: { type: string }
+            isRedFlag: { type: boolean, example: false }
+            recommendedReassessmentMinutes: { type: integer, example: 15 }
+
+    QueueEntryItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tokenNumber: { type: string, example: AC-104 }
+        urgencyLevel: { type: integer, example: 2 }
+        priorityScore: { type: number, example: 50025.4 }
+        status: { type: string, example: WAITING }
+        enteredQueueAt: { type: string, format: date-time }
+        reassessmentDueAt: { type: string, format: date-time }
+        isReassessmentOverdue: { type: boolean, example: false }
+
+    DuplicateMatchResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code: { type: string, example: POTENTIAL_DUPLICATE_FOUND }
+            message: { type: string }
+            matches:
+              type: array
+              items:
+                $ref: '#/components/schemas/PatientSummary'
+
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        error:
+          type: object
+          properties:
+            code: { type: string, example: VALIDATION_FAILED }
+            message: { type: string, example: Invalid parameter }
+            correlationId: { type: string, example: req-uuid }
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  issue: { type: string }

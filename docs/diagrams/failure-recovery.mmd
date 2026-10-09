@@ -1,0 +1,36 @@
+graph TD
+    subgraph OutageScenarios ["Failure Outage Triggers"]
+        NetCut["Network Partition / SSE Loss (> 5s)"]
+        DBCrash["PostgreSQL Master Failure"]
+        PowerLoss["Total Facility Power Loss"]
+    end
+
+    subgraph ProtectiveActions ["Immediate Fail-Safe Safeguards"]
+        StaleLock["Stale-Data Guard Engaged: Actions Locked"]
+        ReplicaMode["Read-Only Replica Fallback: Queue Remains Visible"]
+        PaperRunbook["Physical Paper-Chart Triage Activated (SAF-007)"]
+    end
+
+    subgraph RecoveryPathways ["Recovery & State Reconciliation"]
+        AutoResync["SSE Auto-Reconnect -> Fetch /snapshot -> State Restored"]
+        Failover["Standby Replica Promoted -> Writes Restored (< 30s)"]
+        BulkReconcile["Outage Reconciliation Tool: Paper Timestamps Backfilled"]
+    end
+
+    subgraph IntegrityVerification ["Forensic Integrity Validation"]
+        AuditCheck["Cryptographic Audit Ledger Scan: SHA-256 Chain Intact"]
+        ZeroLoss["Zero Double-Calls; Zero Lost Triage Determinations"]
+    end
+
+    NetCut --> StaleLock
+    StaleLock --> AutoResync
+    AutoResync --> ZeroLoss
+
+    DBCrash --> ReplicaMode
+    ReplicaMode --> Failover
+    Failover --> ZeroLoss
+
+    PowerLoss --> PaperRunbook
+    PaperRunbook --> BulkReconcile
+    BulkReconcile --> AuditCheck
+    AuditCheck --> ZeroLoss

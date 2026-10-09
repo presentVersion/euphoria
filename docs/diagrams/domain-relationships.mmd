@@ -1,0 +1,82 @@
+erDiagram
+    FACILITY ||--o{ DEPARTMENT : contains
+    DEPARTMENT ||--o{ CARE_AREA : contains
+    CARE_AREA ||--o{ QUEUE : operates
+    STAFF_USER ||--o{ ENCOUNTER : registers
+    STAFF_USER ||--o{ TRIAGE_ASSESSMENT : assesses
+    STAFF_USER ||--o{ CONSULTATION : conducts
+
+    PATIENT ||--o{ ENCOUNTER : has
+    ENCOUNTER ||--o{ VITAL_SIGN_OBSERVATION : captures
+    ENCOUNTER ||--o{ TRIAGE_ASSESSMENT : receives
+    ENCOUNTER ||--o{ RED_FLAG_ALERT : triggers
+    ENCOUNTER ||--o{ REASSESSMENT_RECORD : schedules
+    ENCOUNTER ||--o{ QUEUE_ENTRY : places
+    ENCOUNTER ||--o{ CONSULTATION : completes
+
+    QUEUE ||--o{ QUEUE_ENTRY : holds
+    TRIAGE_ASSESSMENT ||--o| VITAL_SIGN_OBSERVATION : references
+    TRIAGE_ASSESSMENT ||--o{ REASSESSMENT_RECORD : generates
+
+    PATIENT {
+        uuid id PK
+        string mrn UK
+        string first_name
+        string last_name
+        date date_of_birth
+        string administrative_sex
+        string phone_number
+        boolean is_unidentified
+    }
+
+    ENCOUNTER {
+        uuid id PK
+        string encounter_number UK
+        uuid patient_id FK
+        uuid department_id FK
+        timestamptz arrival_time
+        string status
+        int confirmed_urgency_level
+        boolean is_emergency_bypass
+    }
+
+    VITAL_SIGN_OBSERVATION {
+        uuid id PK
+        uuid encounter_id FK
+        int heart_rate_bpm
+        int systolic_bp_mmhg
+        numeric spo2_percentage
+        int gcs_score
+        boolean is_red_flag
+    }
+
+    TRIAGE_ASSESSMENT {
+        uuid id PK
+        uuid encounter_id FK
+        int suggested_urgency_level
+        int confirmed_urgency_level
+        boolean is_clinical_override
+        text override_reason
+        boolean is_downgrade
+        uuid supervisor_id FK
+    }
+
+    QUEUE_ENTRY {
+        uuid id PK
+        uuid queue_id FK
+        uuid encounter_id FK
+        string token_number
+        numeric priority_score
+        int urgency_level
+        string status
+        int row_version
+    }
+
+    CONSULTATION {
+        uuid id PK
+        uuid encounter_id FK
+        uuid clinician_id FK
+        string room_number
+        string status
+        string disposition
+    }

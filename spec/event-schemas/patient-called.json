@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schema.smart-triage.local/events/patient-called.json",
+  "title": "PatientCalledEvent",
+  "description": "Dispatched via Server-Sent Events when a clinician calls the next waiting patient from an authorized queue.",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "timestamp",
+    "schemaVersion",
+    "facilityId",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "type": "string",
+      "enum": ["PATIENT_CALLED"]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "facilityId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "payload": {
+      "type": "object",
+      "required": [
+        "queueEntryId",
+        "encounterId",
+        "departmentId",
+        "clinicianId",
+        "clinicianName",
+        "examRoom",
+        "urgencyLevel",
+        "callCount",
+        "calledAt"
+      ],
+      "properties": {
+        "queueEntryId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "encounterId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "departmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "clinicianId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "clinicianName": {
+          "type": "string"
+        },
+        "examRoom": {
+          "type": "string",
+          "description": "Physical examination room or consultation cubicle where the patient must report."
+        },
+        "urgencyLevel": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "callCount": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of times this patient has been called for this encounter (max 3 before temporary hold/no-show flow)."
+        },
+        "calledAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

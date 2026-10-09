@@ -1,0 +1,37 @@
+graph LR
+    subgraph EventSources ["State Mutation Triggers"]
+        Reg["Registration Desk"]
+        Triage["Triage Bay"]
+        Doctor["Doctor Room"]
+        Supervisor["Supervisor Console"]
+        Timer["60s Elapsed Time Cron"]
+    end
+
+    subgraph BackendGateway ["Application Server & SSE Hub"]
+        Controller["REST Controllers (Zod Validated)"]
+        Transaction["ACID Transaction Boundary"]
+        EventHub["SSE Broadcaster Hub"]
+        RoomFilter["Department Channel Scoping"]
+    end
+
+    subgraph ClientTerminals ["Target Terminal Displays"]
+        DocScreen["Doctor Queue Worklist (< 200ms)"]
+        ChargeScreen["Charge Nurse Overview (< 200ms)"]
+        TriageScreen["Triage Bay Worklist (< 200ms)"]
+        PublicTV["Public Waiting Room TV (Sanitized Tokens)"]
+    end
+
+    Reg -->|POST /patients| Controller
+    Triage -->|POST /triage/assessments| Controller
+    Doctor -->|POST /queues/call-next| Controller
+    Supervisor -->|POST /transfers| Controller
+    Timer -->|Tick| Controller
+
+    Controller --> Transaction
+    Transaction -->|Commit & Emit Event| EventHub
+    EventHub --> RoomFilter
+
+    RoomFilter -->|SSE Channel: /stream?dept=ED| DocScreen
+    RoomFilter -->|SSE Channel: /stream?facility=all| ChargeScreen
+    RoomFilter -->|SSE Channel: /stream?care_area=triage| TriageScreen
+    RoomFilter -->|SSE Channel: /public-stream (No PHI)| PublicTV

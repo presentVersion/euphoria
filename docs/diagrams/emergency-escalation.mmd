@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    actor Nurse as "Triage / Waiting Room Staff"
+    participant Gateway as "API Gateway"
+    participant TriageEngine as "Triage & Escalation Engine"
+    participant DB as "PostgreSQL DB"
+    participant SSE as "SSE Broadcaster"
+    actor Doctor as "Resuscitation Team Leader"
+
+    alt Automated Trigger on Vitals Submission
+        Nurse->>Gateway: POST /api/v1/triage/assessments (SpO2: 84%, GCS: 7)
+        Gateway->>TriageEngine: evaluateVitals(vitals)
+        TriageEngine-->>TriageEngine: Red-Flag Match: SEVERE_HYPOXIA + UNRESPONSIVE
+    else Manual Panic Action
+        Nurse->>Gateway: POST /api/v1/triage/escalate (Patient collapsed in waiting room)
+    end
+
+    rect rgb(255, 235, 235)
+        Note over TriageEngine, DB: Immediate Level 1 Safety Escalation
+        TriageEngine->>DB: INSERT INTO red_flag_alerts (alert_type='PHYSIOLOGICAL_CRISIS', status='ACTIVE')
+        TriageEngine->>DB: UPDATE encounters SET confirmed_urgency_level=1, care_area='RESUS'
+        TriageEngine->>DB: UPDATE queue_entries SET priority_score = priority_score + 50000
+        TriageEngine->>DB: INSERT INTO audit_logs (RED_FLAG_ESCALATION_TRIGGERED)
+    end
+
+    TriageEngine->>SSE: Broadcast RED_FLAG_TRIGGERED (All Connected Terminals)
+    
+    par Multi-Station Alert Response
+        SSE-->>Doctor: Flashing Full-Screen Red Banner & Medical Alarm Chime
+        SSE-->>Nurse: Emergency Wristband Triggered
+    end
+
+    Doctor->>Gateway: POST /api/v1/triage/red-flags/{id}/acknowledge
+    Gateway->>DB: UPDATE red_flag_alerts SET status='ACKNOWLEDGED', acknowledged_by_id=DoctorID, acknowledged_at=NOW()
+    Gateway->>SSE: Broadcast RED_FLAG_ACKNOWLEDGED
+    SSE-->>Doctor: Audio Silenced; Alert Remains Pinned Until Bed Admission

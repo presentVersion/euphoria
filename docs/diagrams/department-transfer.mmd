@@ -1,0 +1,30 @@
+sequenceDiagram
+    autonumber
+    actor SendingNurse as "Urgent Care Nurse"
+    actor ReceivingNurse as "Acute Care Bay Nurse"
+    participant Gateway as "API Gateway"
+    participant DeptService as "Department Service"
+    participant DB as "PostgreSQL DB"
+    participant SSE as "SSE Hub"
+
+    SendingNurse->>Gateway: POST /api/v1/encounters/{id}/transfer (Target: Acute Bay, SBAR Note)
+    Gateway->>DeptService: requestTransfer(encounterId, toCareAreaId, sbarNote)
+    DeptService->>DB: UPDATE encounters SET status='TRANSFER_PENDING'
+    DeptService->>DB: INSERT INTO audit_logs (TRANSFER_REQUESTED)
+    DeptService->>SSE: Broadcast PATIENT_TRANSFER_PENDING (Acute Bay Console)
+    
+    Note over ReceivingNurse: Flashing Blue Badge on Acute Bay Worklist
+    ReceivingNurse->>Gateway: GET /api/v1/encounters/{id}/transfer-details
+    Gateway-->>ReceivingNurse: Returns SBAR Handoff Note & Vital Trends
+    
+    ReceivingNurse->>Gateway: POST /api/v1/encounters/{id}/accept-transfer (Bed 4 Allocated)
+    Gateway->>DeptService: acceptTransfer(encounterId, bedNumber)
+    DeptService->>DB: BEGIN TRANSACTION
+    DeptService->>DB: UPDATE queue_entries SET status='REASSIGNED' WHERE queue_id=UrgentQueue
+    DeptService->>DB: INSERT INTO queue_entries (queue_id=AcuteQueue, priority_score=CALCULATE())
+    DeptService->>DB: UPDATE encounters SET status='TRIAGED_WAITING', care_area_id=AcuteArea
+    DeptService->>DB: INSERT INTO audit_logs (TRANSFER_COMPLETED)
+    DeptService->>DB: COMMIT TRANSACTION
+    
+    DeptService->>SSE: Broadcast PATIENT_TRANSFERRED (Sending & Receiving Consoles)
+    Gateway-->>ReceivingNurse: Transfer Finalized; Patient Active in Acute Queue

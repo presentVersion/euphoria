@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    actor Receptionist as "Receptionist"
+    participant UI as "Registration Web UI"
+    participant Gateway as "API Gateway"
+    participant RegSvc as "Registration Service"
+    participant DB as "PostgreSQL DB"
+    participant SSE as "SSE Hub"
+
+    alt Acute Emergency Bypass Flow
+        Receptionist->>UI: Clicks "EMERGENCY BYPASS"
+        UI->>Gateway: POST /api/v1/patients/emergency-bypass
+        Gateway->>RegSvc: handleEmergencyBypass(arrivalMethod, complaint)
+        RegSvc->>DB: INSERT Patient (is_unidentified=true, TEMP-EMERG-XXXX)
+        RegSvc->>DB: INSERT Encounter (urgency_level=1, care_area=RESUS)
+        RegSvc->>DB: INSERT AuditLog (EMERGENCY_BYPASS_INVOKED)
+        RegSvc-->>Gateway: Return Emergency Token & Encounter
+        Gateway-->>UI: Display Token & Print Wristband Barcode
+        RegSvc->>SSE: Broadcast RED_FLAG_TRIGGERED (All Terminals)
+    else Standard Patient Registration Flow
+        Receptionist->>UI: Inputs Search Query (MRN / Phone / Name)
+        UI->>Gateway: GET /api/v1/patients/search
+        Gateway->>DB: SELECT * FROM patients WHERE ...
+        alt Patient Record Found
+            DB-->>UI: Returns Existing Patient Profile
+            Receptionist->>UI: Selects Patient & Inputs Chief Complaint
+        else New Patient Registration
+            Receptionist->>UI: Fills Demographic Form + Complaint
+            UI->>Gateway: POST /api/v1/patients
+            Gateway->>RegSvc: Check Duplicate Algorithm (Soundex + DOB)
+            alt Duplicate Match Detected
+                RegSvc-->>UI: Display Side-by-Side Duplicate Prompt
+                Receptionist->>UI: Selects Existing OR Confirms Separate
+            end
+            RegSvc->>DB: INSERT Patient (...)
+        end
+        UI->>Gateway: POST /api/v1/encounters
+        Gateway->>RegSvc: createEncounter(patientId, complaint, deptId)
+        RegSvc->>DB: INSERT Encounter (status='WAITING_FOR_TRIAGE')
+        RegSvc->>DB: INSERT AuditLog (ENCOUNTER_CREATED)
+        RegSvc->>SSE: Broadcast PATIENT_REGISTERED (Triage Bay)
+        Gateway-->>UI: HTTP 201 Created (Token Generated)
+    end
